@@ -25,11 +25,11 @@ help() {
     echo "     restore  <file-name>  Restore database from dump sql file (wb-www-mysql)"
     echo 
     echo "Example 1: $0 list"
-    echo "Example 2: $0 clone ecr-ms-live"
-    echo "Example 3: $0 up ecr-ms-live"
+    echo "Example 2: $0 clone site-name"
+    echo "Example 3: $0 up site-name"
     echo "Example 4: $0 down"
     echo "Example 5: $0 shell"
-    echo "Example 6: $0 restore ecr-ms-live.sql"
+    echo "Example 6: $0 restore site-name.sql"
 }
 
 # ----------------------------------------------------------
