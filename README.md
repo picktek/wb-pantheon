@@ -130,3 +130,11 @@ You should see the following output:
 ```
 
 Select the number corresponding to the site you want to re-start. 
+
+### Limitations
+
+There are a couple of limitations to keep in mind when using this setup:
+
+- The current setup only allows you to run a single site at a time. If you want to work on a different site, you'll need to stop the running site first before starting a new one.
+
+- The `wbp` helper script is written in Bash, which means it won't work on Windows systems by default. You can use a Bash emulator like Git Bash or Cygwin to run the script on a Windows machine, but this can be somewhat annoying.
