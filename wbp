@@ -22,6 +22,7 @@ help() {
     echo "     up <site-name>        Run site locally in docker"
     echo "     down                  Stop site locally in docker"
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
+    echo "     logs                  Show last 150 log entries (wb-www-drupal)"
     echo "     restore  <file-name>  Restore database from dump sql file (wb-www-mysql)"
     echo 
     echo "Example 1: $0 list"
@@ -29,7 +30,8 @@ help() {
     echo "Example 3: $0 up site-name"
     echo "Example 4: $0 down"
     echo "Example 5: $0 shell"
-    echo "Example 6: $0 restore site-name.sql"
+    echo "Example 6: $0 logs"
+    echo "Example 7: $0 restore site-name.sql"
 }
 
 # ----------------------------------------------------------
@@ -142,6 +144,12 @@ clone() {
 
 # ----------------------------------------------------------
 
+logs() {
+    $DOCKER logs -tf --tail=150 $CONTAINER_NAME
+}
+
+# ----------------------------------------------------------
+
 db-restore() {
 
     if [ "$ACTION_PARAM" == "" ]; then
@@ -223,6 +231,12 @@ main () {
             shift
             shift
             ;;
+        logs)
+            ACTION=logs
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         restore)
             ACTION=restore
             ACTION_PARAM="$2"
@@ -296,6 +310,11 @@ main () {
         if [ "$ACTION" == "shell" ]; then
             # $DOCKER exec -i $CONTAINER_NAME ln -s /opt/drupal/web/vendor/drush/drush/drush /opt/drupal/vendor/bin/drush
             $DOCKER exec -it $CONTAINER_NAME sh
+        fi
+        
+        # logs action
+        if [ "$ACTION" == "logs" ]; then
+            logs;
         fi
 
         # restore action

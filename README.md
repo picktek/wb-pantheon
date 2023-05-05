@@ -102,6 +102,14 @@ To start the containers back up again, you can use the following command:
 
 This will start the containers.
 
+##### Show Logs
+
+To show last 150 log entries, you can use the following command:
+
+```shell
+./wbp logs
+```
+
 ##### Restore DB Dump from file
 
 If you need to restore a database dump from a file, you can use the following command:
