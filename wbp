@@ -190,6 +190,9 @@ summary() {
     echo "Enter in drupal container shell: '$0 shell'"
     echo "Inside container you can use drush: 'drush cache:rebuild'"
     echo 
+    echo "Admin URL"
+    $DOCKER exec -i $CONTAINER_NAME drush uli
+    echo 
 }
 
 # ----------------------------------------------------------
