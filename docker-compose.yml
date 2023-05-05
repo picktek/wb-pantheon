@@ -1,0 +1,62 @@
+# This is new repository of WB Drupal sites, which is based on drupal full stack 
+# running under docker LEMP (Linux, Nginx, MySQL, and PHP) stack.
+#
+# If you receive this copy by unauthorized means, please print and burn !!
+#
+
+version: "3.5"
+
+services:
+  
+  wb-www-mysql:
+    image: mysql:8.0
+    container_name: wb-www-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    ports:
+      - 17613:17613
+    env_file: config/database.env
+    volumes:
+      - wb-www-dbdata:/var/lib/mysql
+    networks:
+      - internal
+
+  wb-www-drupal:
+    image: drupal:php8.1-fpm-alpine3.17
+    container_name: wb-www-drupal
+    user: root
+    depends_on:
+      - wb-www-mysql
+    restart: unless-stopped
+    networks:
+      - internal
+      - wbnet
+    volumes:
+      - "./sites/${SITE_NAME}/composer.json:/opt/drupal/composer.json"
+      - "./sites/${SITE_NAME}/composer.lock:/opt/drupal/composer.lock"
+      - "./sites/${SITE_NAME}/web:/var/www/html"
+
+  wb-www-nginx:
+    image: nginx:1.23.4-alpine
+    container_name: wb-www-nginx
+    depends_on:
+      - wb-www-drupal
+    restart: unless-stopped
+    ports:
+      - "${PORT}:80"
+      # - 443:443
+    volumes:
+      - "./sites/${SITE_NAME}/web:/var/www/html"
+      - ./config/nginx.conf:/etc/nginx/conf.d/nginx.conf
+    networks:
+      - wbnet
+
+networks:
+  wbnet:
+    driver: bridge
+  internal:
+    driver: bridge
+
+volumes:
+  wb-www-dbdata:
+

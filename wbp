@@ -1,0 +1,315 @@
+#!/bin/bash
+
+# CLI's
+TERMINUS=terminus
+GIT=git
+DOCKER=docker
+
+CONTAINER_NAME=wb-www-drupal
+CONTAINER_NAME_DB=wb-www-mysql
+DEFAULT_WWW_PORT=80
+WBP_HOME=$(dirname $0)
+
+# ----------------------------------------------------------
+
+# Help screen
+help() {
+    echo "WB Pantheon Deployment script v0.1"
+    echo "Usage: $0 <options>"
+    echo "  options:"
+    echo "     list                  List of remote pantheon sites"
+    echo "     clone <site-name>     Clone site locally from pantheon web portal"
+    echo "     up <site-name>        Run site locally in docker"
+    echo "     down                  Stop site locally in docker"
+    echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
+    echo "     restore  <file-name>  Restore database from dump sql file (wb-www-mysql)"
+    echo 
+    echo "Example 1: $0 list"
+    echo "Example 2: $0 clone ecr-ms-live"
+    echo "Example 3: $0 up ecr-ms-live"
+    echo "Example 4: $0 down"
+    echo "Example 5: $0 shell"
+    echo "Example 6: $0 restore ecr-ms-live.sql"
+}
+
+# ----------------------------------------------------------
+
+site-list() {
+    # #Authenticate Terminus
+    $TERMINUS auth:login
+    $TERMINUS site:list --format=json | grep -o '"name": "[^"]*' | grep -o '[^"]*$'
+}
+
+# ----------------------------------------------------------
+
+site-up() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS2="Select your site from local list 'sites/*' (number): "
+        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+    
+    if [ -d "sites/$ACTION_PARAM" ]; then    
+        export SITE_NAME=$ACTION_PARAM
+        export PORT=$DEFAULT_WWW_PORT
+
+        $DOCKER compose up -d --no-recreate
+    else
+        echo "Site 'sites/$ACTION_PARAM' doesn't exists !"
+        exit 1
+    fi
+}
+
+# ----------------------------------------------------------
+
+site-down() {
+    $DOCKER compose stop
+}
+
+# ----------------------------------------------------------
+
+clone() {
+
+    # #Authenticate Terminus
+    $TERMINUS auth:login
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS3="Select your site from pantheon (number): "
+        select SNM in $($TERMINUS site:list --format=json | grep -o '"name": "[^"]*' | grep -o '[^"]*$')
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    export SITE_NAME=$ACTION_PARAM
+    export PORT=$DEFAULT_WWW_PORT
+
+    DIR="sites/$SITE_NAME"
+    
+    SITE_ID=$($TERMINUS site:lookup $SITE_NAME)
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
+
+    if [ ! -d $DIR ]; then
+
+        # create sites directory if doesn't exists
+        mkdir -p $DIR
+        
+        echo "git clone" "ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR"
+        $GIT clone ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR
+
+        # link settings.php
+        ln config/settings.local.php $DIR/web/sites/default/settings.local.php
+
+        # Run php composer inside drupal container
+        # up containers
+        $DOCKER compose up -d --force-recreate
+        $DOCKER exec -i $CONTAINER_NAME apk add git
+        $DOCKER exec -i $CONTAINER_NAME apk add unzip
+        $DOCKER exec -i $CONTAINER_NAME composer install --ignore-platform-req=ext-bcmath
+
+        
+        PS3="Select 1 (Yes) 2 (No): "
+        echo "Do you want to restore database from pantheon ?"
+        select yn in "Yes" "No"; do
+            case $yn in
+            Yes)
+                db-restore;
+                break
+                ;;
+            No) exit ;;
+            esac
+        done
+    else
+        echo "Site '$DIR' already exists!, Do you want to update from git ?"
+        select yn in "Yes" "No"; do
+            case $yn in
+            Yes)
+                $GIT -C $DIR pull;
+                break
+                ;;
+            No) exit ;;
+            esac
+        done
+    fi
+}
+
+# ----------------------------------------------------------
+
+db-restore() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS2="Select site to download database dump (number): "
+        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    $TERMINUS local:getLiveDb $ACTION_PARAM
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
+    
+    mkdir -p db
+    mv $HOME/pantheon-local-copies/db/$ACTION_PARAM-db.tgz db
+    echo "Extracting db/$ACTION_PARAM-db.tgz..."
+    gunzip db/$ACTION_PARAM-db.tgz 
+    
+    echo "Importing db/$ACTION_PARAM-db.tgz into $CONTAINER_NAME_DB" 
+    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot pantheon < db/$ACTION_PARAM-db.tar 
+}
+
+# ----------------------------------------------------------
+
+summary() {
+    echo
+    echo "You should add local domain entry in your /etc/hosts file."
+    echo "sudo vi /etc/hosts"
+    echo "127.0.0.1   wb-pantheon.local"
+    echo 
+    echo "Visit: http://wb-pantheon.local"
+    echo 
+    echo 
+    echo "Useful commands:"
+    echo "Enter in drupal container shell: '$0 shell'"
+    echo "Inside container you can use drush: 'drush cache:rebuild'"
+    echo 
+}
+
+# ----------------------------------------------------------
+
+main () {
+
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+
+        case $key in
+        clone)
+            ACTION=clone
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        list)
+            ACTION=list
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        up)
+            ACTION=up
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        down)
+            ACTION=down
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        shell)
+            ACTION=shell
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        restore)
+            ACTION=restore
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+        esac
+    done
+
+    set -- "${POSITIONAL[@]}" # restore positional parameters
+
+    # Here is positional parameters tail. Basically the last command line argument(s).
+    TAIL=$1
+
+    # Check dependency. If 'docker' is here.
+    # Normally docker should be here but who knows :)
+    if ! hash $DOCKER &>/dev/null; then
+        echo "Docker is not installed on Host computer !, Please make sure 'docker' CLI is accessible from shell"
+        exit 1
+    fi
+
+    # Check dependency. If 'terminus' is here.
+    # Normally terminus should be here but who knows :)
+    if ! hash $TERMINUS &>/dev/null; then
+        echo "Terminus is not installed on Host computer. Terminus is a command line interface that provides advanced interaction with Pantheon."
+        echo "You can install from here: https://docs.pantheon.io/terminus/install"
+        exit 1
+    fi
+
+    # Check dependency. If 'git' is here.
+    # Normally git should be here but who knows :)
+    if ! hash $GIT &>/dev/null; then
+        echo "Git is not installed on Host computer. That's weird"
+        exit 1
+    fi
+
+    # Check action parameter
+    if [ "$ACTION" == "" ]; then
+        help
+        echo "Action must be specified in command line argument !"
+        exit 1
+    else
+
+        # clone action
+        if [ "$ACTION" == "clone" ]; then
+            clone;
+            summary;
+        fi
+
+        # list action
+        if [ "$ACTION" == "list" ]; then
+            site-list;
+        fi
+
+        # up action
+        if [ "$ACTION" == "up" ]; then
+            site-up;
+            summary;
+        fi
+
+        # down action
+        if [ "$ACTION" == "down" ]; then
+            site-down;
+        fi
+
+        # shell action
+        if [ "$ACTION" == "shell" ]; then
+            # $DOCKER exec -i $CONTAINER_NAME ln -s /opt/drupal/web/vendor/drush/drush/drush /opt/drupal/vendor/bin/drush
+            $DOCKER exec -it $CONTAINER_NAME sh
+        fi
+
+        # restore action
+        if [ "$ACTION" == "restore" ]; then
+            db-restore;
+        fi
+
+        exit 0
+    fi
+
+    help;
+}
+
+main "$@"
+
+
+
