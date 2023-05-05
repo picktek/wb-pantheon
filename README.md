@@ -67,7 +67,7 @@ Here are some additional commands that may come in handy:
 To enter the Drupal container shell, run the following command:
 
 ```shell
-$ ./wbp shell
+./wbp shell
 ```
 
 This will open up a shell session inside the container. Once you're inside the container, you can use Drush.
@@ -77,7 +77,7 @@ This will open up a shell session inside the container. Once you're inside the c
 Once you're inside the container, you can use Drush to rebuild the cache. To do so, simply run the following command:
 
 ```shell
-$ drush cache:rebuild
+drush cache:rebuild
 ```
 
 This will clear out the cache for your Drupal site.
@@ -87,7 +87,7 @@ This will clear out the cache for your Drupal site.
 To stop the running containers, you can use the following command:
 
 ```shell
-$ ./wbp down
+./wbp down
 ```
 
 This will gracefully shut down the containers and stop any running processes. 
@@ -97,7 +97,7 @@ This will gracefully shut down the containers and stop any running processes.
 To start the containers back up again, you can use the following command:
 
 ```shell
-$ ./wbp up
+./wbp up
 ```
 
 This will start the containers.
@@ -107,7 +107,7 @@ This will start the containers.
 If you need to restore a database dump from a file, you can use the following command:
 
 ```shell
-$ ./wbp restore site-dump.sql
+./wbp restore site-dump.sql
 ```
 
 In this command, `site-dump.sql` is the name of your MySQL dump file. Make sure the file is located in the same directory as the `wbp` script, or provide the full path to the file if it's located elsewhere.
@@ -118,8 +118,8 @@ The `restore` command will import the contents of the MySQL dump file into the M
 
 By default, the Nginx container is set to run on port `80`. However, if you need to change the port number for any reason, you can do so by modifying the `DEFAULT_WWW_PORT` environment variable in the `wbp` script. Change the `80` to your desired port number, save the file, and then re-run the `wbp` script by invoking command:
 
-```
-$ ./wbp up
+```shell
+./wbp up
 ```
 
 You should see the following output:
