@@ -118,7 +118,7 @@ If you need to restore a database from Pantheon, you can use the following comma
 ./wbp restore
 ```
 
-The `restore` command will restore database from Pantheon to the MySQL container.
+The `restore` command will restore database from Pantheon to the MySQL container. Wait for the restore process to complete. The time it takes will depend on the size of the database.
 
 ##### Restore DB Dump from file
 
