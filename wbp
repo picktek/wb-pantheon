@@ -23,6 +23,7 @@ help() {
     echo "     down                  Stop site locally in docker"
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
+    echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore  <file-name>  Restore database from dump sql file (wb-www-mysql)"
     echo 
     echo "Example 1: $0 list"
@@ -31,7 +32,8 @@ help() {
     echo "Example 4: $0 down"
     echo "Example 5: $0 shell"
     echo "Example 6: $0 logs"
-    echo "Example 7: $0 restore site-name.sql"
+    echo "Example 7: $0 composer"
+    echo "Example 8: $0 restore site-name.sql"
 }
 
 # ----------------------------------------------------------
@@ -74,6 +76,16 @@ site-down() {
 
 # ----------------------------------------------------------
 
+composer() {
+
+    # Run PHP composer inside drupal container
+    $DOCKER exec -i $CONTAINER_NAME apk add git
+    $DOCKER exec -i $CONTAINER_NAME apk add unzip
+    $DOCKER exec -i $CONTAINER_NAME composer install --ignore-platform-req=ext-bcmath
+}
+
+# ----------------------------------------------------------
+
 clone() {
 
     # #Authenticate Terminus
@@ -112,10 +124,7 @@ clone() {
         # Run php composer inside drupal container
         # up containers
         $DOCKER compose up -d --force-recreate
-        $DOCKER exec -i $CONTAINER_NAME apk add git
-        $DOCKER exec -i $CONTAINER_NAME apk add unzip
-        $DOCKER exec -i $CONTAINER_NAME composer install --ignore-platform-req=ext-bcmath
-
+        composer;
         
         PS3="Select 1 (Yes) 2 (No): "
         echo "Do you want to restore database from pantheon ?"
@@ -234,6 +243,12 @@ main () {
             shift
             shift
             ;;
+        composer)
+            ACTION=composer
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         logs)
             ACTION=logs
             ACTION_PARAM="$2"
@@ -315,6 +330,11 @@ main () {
             $DOCKER exec -it $CONTAINER_NAME sh
         fi
         
+        # composer action
+        if [ "$ACTION" == "composer" ]; then
+            composer;
+        fi
+
         # logs action
         if [ "$ACTION" == "logs" ]; then
             logs;

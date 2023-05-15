@@ -17,14 +17,14 @@ What you need to run locally on your system:
 You'll need to first obtain the project files from GitHub. Open up your terminal and run the following commands:
 
 ```shell
-$ git clone git@github.com:picktek/wb-pantheon.git
-$ cd wb-pantheon
+git clone git@github.com:picktek/wb-pantheon.git
+cd wb-pantheon
 ```
 
 Next, you'll need to add the domain `wb-pantheon.local` to your `/etc/hosts` file. To do so, run the following command:
 
 ```shell
-$ sudo vi /etc/hosts
+sudo vi /etc/hosts
 ```
 
 This will open the hosts file in the `vi` editor. Scroll down to the bottom of the file and add the following line:
@@ -38,7 +38,7 @@ Once you've added the domain to the hosts file, save and exit the editor.
 Now, you're ready to run the `wbp` script to clone the site. Run the following command:
 
 ```shell
-$ ./wbp clone
+./wbp clone
 ```
 
 You should see the following output:
@@ -110,6 +110,16 @@ To show last 150 log entries, you can use the following command:
 ./wbp logs
 ```
 
+##### Restore Database from Pantheon
+
+If you need to restore a database from Pantheon, you can use the following command:
+
+```shell
+./wbp restore
+```
+
+The `restore` command will restore database from Pantheon to the MySQL container.
+
 ##### Restore DB Dump from file
 
 If you need to restore a database dump from a file, you can use the following command:
@@ -146,3 +156,8 @@ There are a couple of limitations to keep in mind when using this setup:
 - The current setup only allows you to run a single site at a time. If you want to work on a different site, you'll need to stop the running site first before starting a new one.
 
 - The `wbp` helper script is written in Bash, which means it won't work on Windows systems by default. You can use a Bash emulator like Git Bash or Cygwin to run the script on a Windows machine, but this can be somewhat annoying.
+
+### Troubleshooting
+
+- **Fatal error**: Uncaught Error: Class "Symfony\Component\EventDispatcher\Event" not found in /opt/drupal/web/core/lib/Drupal/Component/EventDispatcher/Event.php:15 
+  - You need to run `./wbp composer` in order to install Drupal libraries (vendor folder) in Drupal container
