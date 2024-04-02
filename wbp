@@ -24,7 +24,7 @@ help() {
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
-    echo "     restore  <file-name>  Restore database from dump sql file (wb-www-mysql)"
+    echo "     restore               Restore database from live site (wb-www-mysql)"
     echo 
     echo "Example 1: $0 list"
     echo "Example 2: $0 clone site-name"
@@ -33,7 +33,7 @@ help() {
     echo "Example 5: $0 shell"
     echo "Example 6: $0 logs"
     echo "Example 7: $0 composer"
-    echo "Example 8: $0 restore site-name.sql"
+    echo "Example 8: $0 restore"
 }
 
 # ----------------------------------------------------------
@@ -181,7 +181,7 @@ db-restore() {
     gunzip db/$ACTION_PARAM-db.tgz 
     
     echo "Importing db/$ACTION_PARAM-db.tgz into $CONTAINER_NAME_DB" 
-    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot pantheon < db/$ACTION_PARAM-db.tar 
+    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot --force pantheon < db/$ACTION_PARAM-db.tar 
 }
 
 # ----------------------------------------------------------

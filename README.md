@@ -112,25 +112,25 @@ To show last 150 log entries, you can use the following command:
 
 ##### Restore Database from Pantheon
 
-If you need to restore a database from Pantheon, you can use the following command:
+If you need to restore a database from Live database Pantheon, you can use the following command:
 
 ```shell
 ./wbp restore
 ```
 
-The `restore` command will restore database from Pantheon to the MySQL container. Wait for the restore process to complete. The time it takes will depend on the size of the database.
+The `restore` command will restore database from Live Pantheon to the MySQL container. Wait for the restore process to complete. The time it takes will depend on the size of the database.
 
 ##### Restore DB Dump from file
 
 If you need to restore a database dump from a file, you can use the following command:
 
 ```shell
-./wbp restore site-dump.sql
+docker exec -i wb-www-mysql mysql -uroot --force pantheon < db/site-dump.tar
 ```
 
-In this command, `site-dump.sql` is the name of your MySQL dump file. Make sure the file is located in the same directory as the `wbp` script, or provide the full path to the file if it's located elsewhere.
+In this command, `site-dump.tar` is the name of your MySQL dump file. 
 
-The `restore` command will import the contents of the MySQL dump file into the MySQL container.
+This command will import the contents of the MySQL dump file into the MySQL container.
 
 ### Configuration
 
