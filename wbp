@@ -206,7 +206,9 @@ file-restore() {
     
     mv $HOME/pantheon-local-copies/files/$ACTION_PARAM-files.tgz sites/$ACTION_PARAM/web/sites/default
     echo "Extracting db/$ACTION_PARAM-files.tgz..."
-    gunzip db/$ACTION_PARAM-files.tgz 
+    tar zxvf sites/$ACTION_PARAM/web/sites/default/$ACTION_PARAM-files.tgz -C sites/$ACTION_PARAM/web/sites/default
+    rm -rf  sites/$ACTION_PARAM/web/sites/default/files
+    mv sites/$ACTION_PARAM/web/sites/default/files_live sites/$ACTION_PARAM/web/sites/default/files
 }
 
 # ----------------------------------------------------------
