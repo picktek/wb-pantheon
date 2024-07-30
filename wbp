@@ -25,6 +25,7 @@ help() {
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
+    echo "     restoreFiles          Restore files from live site"
     echo 
     echo "Example 1: $0 list"
     echo "Example 2: $0 clone site-name"
@@ -34,6 +35,7 @@ help() {
     echo "Example 6: $0 logs"
     echo "Example 7: $0 composer"
     echo "Example 8: $0 restore"
+    echo "Example 9: $0 restoreFiles"
 }
 
 # ----------------------------------------------------------
@@ -186,6 +188,29 @@ db-restore() {
 
 # ----------------------------------------------------------
 
+file-restore() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS2="Select site to download files (number): "
+        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    $TERMINUS local:getLiveFiles $ACTION_PARAM
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
+    
+    mv $HOME/pantheon-local-copies/files/$ACTION_PARAM-files.tgz sites/$ACTION_PARAM/web/sites/default
+    echo "Extracting db/$ACTION_PARAM-files.tgz..."
+    gunzip db/$ACTION_PARAM-files.tgz 
+}
+
+# ----------------------------------------------------------
+
 summary() {
     echo
     echo "You should add local domain entry in your /etc/hosts file."
@@ -257,6 +282,12 @@ main () {
             ;;
         restore)
             ACTION=restore
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        restoreFiles)
+            ACTION=restoreFiles
             ACTION_PARAM="$2"
             shift
             shift
@@ -343,6 +374,11 @@ main () {
         # restore action
         if [ "$ACTION" == "restore" ]; then
             db-restore;
+        fi
+
+        # restore action
+        if [ "$ACTION" == "restoreFiles" ]; then
+            file-restore;
         fi
 
         exit 0
