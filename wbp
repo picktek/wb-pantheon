@@ -83,6 +83,7 @@ composer() {
     # Run PHP composer inside drupal container
     $DOCKER exec -i $CONTAINER_NAME apk add git
     $DOCKER exec -i $CONTAINER_NAME apk add unzip
+    $DOCKER exec -i $CONTAINER_NAME apk add patch
     $DOCKER exec -i $CONTAINER_NAME composer install --ignore-platform-req=ext-bcmath
 }
 
