@@ -1,5 +1,9 @@
 <?php
 
+$settings['trusted_host_patterns'] = [
+    '^wb-pantheon\.local$',
+];
+
 if (!isset($databases)) {
     $databases = array();
 }
@@ -12,4 +16,5 @@ $databases['default']['default'] = array(
     'username' => 'root',
     'password' => '',
     'host' => 'wb-www-mysql',
-    'port' => 17613 );
+    'port' => 17613
+);
