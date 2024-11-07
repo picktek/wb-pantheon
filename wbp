@@ -27,6 +27,7 @@ help() {
     echo "     restore               Restore database from live site (wb-www-mysql)"
     echo "     dump                  Dump database from db to file"
     echo "     restoreFiles          Restore files from live site"
+    echo "     dashboard             Print Pantheon dashboard link by given site name"
     echo 
     echo "Example 1: $0 list"
     echo "Example 2: $0 clone site-name"
@@ -38,6 +39,7 @@ help() {
     echo "Example 8: $0 restore"
     echo "Example 9: $0 dump"
     echo "Example 10: $0 restoreFiles"
+    echo "Example 11: $0 dashboard"
 }
 
 # ----------------------------------------------------------
@@ -170,6 +172,24 @@ logs() {
 
 # ----------------------------------------------------------
 
+dashboard-link() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS2="Select site to download database dump (number): "
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    SITE_NAME=$ACTION_PARAM
+    SITE_ID=$(terminus site:info $SITE_NAME | sed -n 's/^  ID[[:space:]]*\(.*\)/\1/p')
+    echo "https://dashboard.pantheon.io/sites/${SITE_ID}"
+}
+
+# ----------------------------------------------------------
+
 db-dump() {
    
     if [ "$ACTION_PARAM" == "" ]; then
@@ -182,10 +202,10 @@ db-dump() {
     fi
 
     SITE_NAME=$ACTION_PARAM
-    DIR_DB="db"
+    # DIR_DB="db"
 
-    echo "Export... $DIR_DB/$SITE_NAME-db.sql.gz"
-    $DOCKER exec -i $CONTAINER_NAME_DB mysqldump -uroot $SITE_NAME | gzip > $DIR_DB/$SITE_NAME-db.sql.gz 
+    # echo "Export... $DIR_DB/$SITE_NAME-db.sql.gz"
+    # $DOCKER exec -i $CONTAINER_NAME_DB mysqldump -uroot $SITE_NAME | gzip > $DIR_DB/$SITE_NAME-db.sql.gz 
 }
 
 # ----------------------------------------------------------
@@ -334,6 +354,12 @@ main () {
             shift
             shift
             ;;
+        dashboard)
+            ACTION=dashboard
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         *)
             POSITIONAL+=("$1")
             shift
@@ -426,6 +452,11 @@ main () {
         # restore action
         if [ "$ACTION" == "restoreFiles" ]; then
             file-restore;
+        fi
+
+        # dashboard action
+        if [ "$ACTION" == "dashboard" ]; then
+            dashboard-link;
         fi
 
         exit 0
