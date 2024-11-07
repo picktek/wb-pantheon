@@ -25,6 +25,7 @@ help() {
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
+    echo "     dump                  Dump database from db to file"
     echo "     restoreFiles          Restore files from live site"
     echo 
     echo "Example 1: $0 list"
@@ -35,7 +36,8 @@ help() {
     echo "Example 6: $0 logs"
     echo "Example 7: $0 composer"
     echo "Example 8: $0 restore"
-    echo "Example 9: $0 restoreFiles"
+    echo "Example 9: $0 dump"
+    echo "Example 10: $0 restoreFiles"
 }
 
 # ----------------------------------------------------------
@@ -52,7 +54,7 @@ site-up() {
 
     if [ "$ACTION_PARAM" == "" ]; then
         PS2="Select your site from local list 'sites/*' (number): "
-        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
         do
             ACTION_PARAM=$SNM
             break;
@@ -63,7 +65,7 @@ site-up() {
         export SITE_NAME=$ACTION_PARAM
         export PORT=$DEFAULT_WWW_PORT
 
-        $DOCKER compose up -d --no-recreate
+        $DOCKER compose up -d --force-recreate
     else
         echo "Site 'sites/$ACTION_PARAM' doesn't exists !"
         exit 1
@@ -107,6 +109,7 @@ clone() {
     export PORT=$DEFAULT_WWW_PORT
 
     DIR="sites/$SITE_NAME"
+    DIR_SITES="sites"
     
     SITE_ID=$($TERMINUS site:lookup $SITE_NAME)
     if [ $? -ne 0 ]; then
@@ -121,9 +124,14 @@ clone() {
         echo "git clone" "ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR"
         $GIT clone ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR
 
-        # link settings.php
-        ln config/settings.local.php $DIR/web/sites/default/settings.local.php
+        placeholder="\${DB_NAME}"
+        cp config/settings.local.php $DIR_SITES/$SITE_NAME-settings.local.php
+        sed -i '' "s|$placeholder|$SITE_NAME|g" "$DIR_SITES/$SITE_NAME-settings.local.php"
 
+        # link settings.php
+        rm -f $DIR/web/sites/default/settings.local.php
+        ln $DIR_SITES/$SITE_NAME-settings.local.php $DIR/web/sites/default/settings.local.php
+        
         # Run php composer inside drupal container
         # up containers
         $DOCKER compose up -d --force-recreate
@@ -162,11 +170,35 @@ logs() {
 
 # ----------------------------------------------------------
 
+db-dump() {
+   
+    # Authenticate Terminus
+    $TERMINUS auth:login
+
+    # Select site fromterminus list
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS3="Select your site from pantheon (number): "
+        select SNM in $($TERMINUS site:list --format=json | grep -o '"name": "[^"]*' | grep -o '[^"]*$')
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    SITE_NAME=$ACTION_PARAM
+    DIR_DB="db"
+
+    echo "Export... $DIR_DB/$SITE_NAME-db.sql.gz"
+    $DOCKER exec -i $CONTAINER_NAME_DB mysqldump -uroot $SITE_NAME | gzip > $DIR_DB/$SITE_NAME-db.sql.gz 
+}
+
+# ----------------------------------------------------------
+
 db-restore() {
 
     if [ "$ACTION_PARAM" == "" ]; then
         PS2="Select site to download database dump (number): "
-        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
         do
             ACTION_PARAM=$SNM
             break;
@@ -182,9 +214,14 @@ db-restore() {
     mv $HOME/pantheon-local-copies/db/$ACTION_PARAM-db.tgz db
     echo "Extracting db/$ACTION_PARAM-db.tgz..."
     gunzip db/$ACTION_PARAM-db.tgz 
-    
+
     echo "Importing db/$ACTION_PARAM-db.tgz into $CONTAINER_NAME_DB" 
-    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot --force pantheon < db/$ACTION_PARAM-db.tar 
+    # Check if the database exists and create it if not
+    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot --execute="CREATE DATABASE IF NOT EXISTS \`$ACTION_PARAM\`;"
+    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot --force $ACTION_PARAM < db/$ACTION_PARAM-db.tar 
+    $DOCKER exec -i $CONTAINER_NAME_DB mysql -uroot --execute="USE $ACTION_PARAM; UPDATE config SET data = REPLACE(data, '\"preprocess\";b:1', '\"preprocess\";b:0') WHERE name = 'system.performance';"
+    
+
 }
 
 # ----------------------------------------------------------
@@ -193,7 +230,7 @@ file-restore() {
 
     if [ "$ACTION_PARAM" == "" ]; then
         PS2="Select site to download files (number): "
-        select SNM in $(ls -A1 -d sites/* | cut -f2 -d'/')
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
         do
             ACTION_PARAM=$SNM
             break;
@@ -279,6 +316,12 @@ main () {
             ;;
         logs)
             ACTION=logs
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
+        dump)
+            ACTION=dump
             ACTION_PARAM="$2"
             shift
             shift
@@ -377,6 +420,11 @@ main () {
         # restore action
         if [ "$ACTION" == "restore" ]; then
             db-restore;
+        fi
+
+        # restore action
+        if [ "$ACTION" == "dump" ]; then
+            db-dump;
         fi
 
         # restore action

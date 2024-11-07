@@ -12,7 +12,7 @@ $settings['hash_salt'] = 'tdGHVg8dVRiiGGz3q5OFKrq1tDVaibvrH-2z2ro_U2QlUU8Oi4aksX
 
 $databases['default']['default'] = array(
     'driver' => 'mysql',
-    'database' => 'pantheon',
+    'database' => '${DB_NAME}',
     'username' => 'root',
     'password' => '',
     'host' => 'wb-www-mysql',
