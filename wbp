@@ -172,13 +172,9 @@ logs() {
 
 db-dump() {
    
-    # Authenticate Terminus
-    $TERMINUS auth:login
-
-    # Select site fromterminus list
     if [ "$ACTION_PARAM" == "" ]; then
-        PS3="Select your site from pantheon (number): "
-        select SNM in $($TERMINUS site:list --format=json | grep -o '"name": "[^"]*' | grep -o '[^"]*$')
+        PS2="Select site to download database dump (number): "
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
         do
             ACTION_PARAM=$SNM
             break;
