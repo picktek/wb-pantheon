@@ -202,10 +202,10 @@ db-dump() {
     fi
 
     SITE_NAME=$ACTION_PARAM
-    # DIR_DB="db"
+    DIR_DB="db"
 
-    # echo "Export... $DIR_DB/$SITE_NAME-db.sql.gz"
-    # $DOCKER exec -i $CONTAINER_NAME_DB mysqldump -uroot $SITE_NAME | gzip > $DIR_DB/$SITE_NAME-db.sql.gz 
+    echo "Export... $DIR_DB/$SITE_NAME-db.sql.gz"
+    $DOCKER exec -i $CONTAINER_NAME_DB mysqldump -uroot $SITE_NAME | gzip > $DIR_DB/$SITE_NAME-db.sql.gz 
 }
 
 # ----------------------------------------------------------
