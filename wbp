@@ -125,6 +125,13 @@ clone() {
         
         echo "git clone" "ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR"
         $GIT clone ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR
+        EXIT_CODE=$?
+
+        # Check if the command was successful
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo "Error: git clone failed with exit code $EXIT_CODE"
+            exit $?
+        fi
 
         placeholder="\${DB_NAME}"
         cp config/settings.local.php $DIR_SITES/$SITE_NAME-settings.local.php
