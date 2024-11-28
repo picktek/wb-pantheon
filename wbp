@@ -28,6 +28,7 @@ help() {
     echo "     dump                  Dump database from db to file"
     echo "     restoreFiles          Restore files from live site"
     echo "     dashboard             Print Pantheon dashboard link by given site name"
+    echo "     conn                  Switch development environment between sftp and git"
     echo 
     echo "Example 1: $0 list"
     echo "Example 2: $0 clone site-name"
@@ -40,6 +41,7 @@ help() {
     echo "Example 9: $0 dump"
     echo "Example 10: $0 restoreFiles"
     echo "Example 11: $0 dashboard"
+    echo "Example 12: $0 conn sft"
 }
 
 # ----------------------------------------------------------
@@ -193,6 +195,26 @@ dashboard-link() {
     SITE_NAME=$ACTION_PARAM
     SITE_ID=$(terminus site:info $SITE_NAME | sed -n 's/^  ID[[:space:]]*\(.*\)/\1/p')
     echo "https://dashboard.pantheon.io/sites/${SITE_ID}"
+}
+
+# ----------------------------------------------------------
+
+connection() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        echo "Select one of the connection sftp or git"
+        exit 1
+    fi
+
+    PS2="Select site to download database dump (number): "
+    select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
+    do
+        SITE_NAME=$SNM
+        break;
+    done
+    
+    echo connection:set $SITE_NAME.dev $ACTION_PARAM
+    $TERMINUS connection:set $SITE_NAME.dev $ACTION_PARAM
 }
 
 # ----------------------------------------------------------
@@ -367,6 +389,12 @@ main () {
             shift
             shift
             ;;
+        conn)
+            ACTION=conn
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         *)
             POSITIONAL+=("$1")
             shift
@@ -464,6 +492,11 @@ main () {
         # dashboard action
         if [ "$ACTION" == "dashboard" ]; then
             dashboard-link;
+        fi
+
+        # connection action
+        if [ "$ACTION" == "conn" ]; then
+            connection;
         fi
 
         exit 0
