@@ -29,6 +29,7 @@ help() {
     echo "     restoreFiles          Restore files from live site"
     echo "     dashboard             Print Pantheon dashboard link by given site name"
     echo "     conn                  Switch development environment between sftp and git"
+    echo "     security              Disable or Enable security modules (securelogin and seckit)"
     echo 
     echo "Example 1: $0 list"
     echo "Example 2: $0 clone site-name"
@@ -42,6 +43,7 @@ help() {
     echo "Example 10: $0 restoreFiles"
     echo "Example 11: $0 dashboard"
     echo "Example 12: $0 conn sft"
+    echo "Example 13: $0 security enable"
 }
 
 # ----------------------------------------------------------
@@ -215,6 +217,27 @@ connection() {
     
     echo connection:set $SITE_NAME.dev $ACTION_PARAM
     $TERMINUS connection:set $SITE_NAME.dev $ACTION_PARAM
+}
+
+# ----------------------------------------------------------
+
+security() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        echo "Select one of the parameters enable or disable"
+        exit 1
+    fi
+
+    
+    echo Security modules $ACTION_PARAM
+    if [ "$ACTION_PARAM" == "enable" ]; then
+        $DOCKER exec -i $CONTAINER_NAME drush pm:install securelogin
+        $DOCKER exec -i $CONTAINER_NAME drush pm:install seckit
+    fi
+    if [ "$ACTION_PARAM" == "disable" ]; then
+        $DOCKER exec -i $CONTAINER_NAME drush pm:uninstall securelogin
+        $DOCKER exec -i $CONTAINER_NAME drush pm:uninstall seckit
+    fi
 }
 
 # ----------------------------------------------------------
@@ -395,6 +418,12 @@ main () {
             shift
             shift
             ;;
+        security)
+            ACTION=security
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         *)
             POSITIONAL+=("$1")
             shift
@@ -497,6 +526,11 @@ main () {
         # connection action
         if [ "$ACTION" == "conn" ]; then
             connection;
+        fi
+
+        # security action
+        if [ "$ACTION" == "security" ]; then
+            security;
         fi
 
         exit 0
