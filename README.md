@@ -110,9 +110,17 @@ To show last 150 log entries, you can use the following command:
 ./wbp logs
 ```
 
+##### Drupal Rebuild Cache (Clear Cache)
+
+The following command rebuilds the Drupal cache:
+
+```shell
+./wbp cr
+```
+
 ##### Restore Database from Pantheon
 
-If you need to restore a database from Live database Pantheon, you can use the following command:
+If you need to restore a database from **Live database** Pantheon, you can use the following command:
 
 ```shell
 ./wbp restore
