@@ -23,6 +23,7 @@ help() {
     echo "     down                  Stop site locally in docker"
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
+    echo "     cr                    Drupal cache rebuild"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
     echo "     dump                  Dump database from db to file"
@@ -37,13 +38,14 @@ help() {
     echo "Example 4: $0 down"
     echo "Example 5: $0 shell"
     echo "Example 6: $0 logs"
-    echo "Example 7: $0 composer"
-    echo "Example 8: $0 restore"
-    echo "Example 9: $0 dump"
-    echo "Example 10: $0 restoreFiles"
-    echo "Example 11: $0 dashboard"
-    echo "Example 12: $0 conn sft"
-    echo "Example 13: $0 security enable"
+    echo "Example 7: $0 cr"
+    echo "Example 8: $0 composer"
+    echo "Example 9: $0 restore"
+    echo "Example 10: $0 dump"
+    echo "Example 11: $0 restoreFiles"
+    echo "Example 12: $0 dashboard"
+    echo "Example 13: $0 conn sft"
+    echo "Example 14: $0 security enable"
 }
 
 # ----------------------------------------------------------
@@ -179,6 +181,12 @@ clone() {
 
 logs() {
     $DOCKER logs -tf --tail=150 $CONTAINER_NAME
+}
+
+# ----------------------------------------------------------
+
+cr() {
+    $DOCKER exec -i $CONTAINER_NAME drush cr
 }
 
 # ----------------------------------------------------------
@@ -388,6 +396,12 @@ main () {
             shift
             shift
             ;;
+        cr)
+            ACTION=cr
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         dump)
             ACTION=dump
             ACTION_PARAM="$2"
@@ -501,6 +515,11 @@ main () {
         # logs action
         if [ "$ACTION" == "logs" ]; then
             logs;
+        fi
+
+        # cr action
+        if [ "$ACTION" == "cr" ]; then
+            cr;
         fi
 
         # restore action
