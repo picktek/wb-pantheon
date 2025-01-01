@@ -23,6 +23,7 @@ help() {
     echo "     down                  Stop site locally in docker"
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
+    echo "     uli                   Print Drupal admin login link"
     echo "     cr                    Drupal cache rebuild"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
@@ -46,6 +47,18 @@ help() {
     echo "Example 12: $0 dashboard"
     echo "Example 13: $0 conn sft"
     echo "Example 14: $0 security enable"
+}
+# ----------------------------------------------------------
+
+copy_to_clipboard() {
+    local content="$1"
+    if command -v pbcopy &>/dev/null; then
+        echo "$content" | pbcopy
+    elif command -v xclip &>/dev/null; then
+        echo "$content" | xclip -selection clipboard
+    else
+        echo "Clipboard tool not found (pbcopy or xclip). Can't copy to clipboard." >&2
+    fi
 }
 
 # ----------------------------------------------------------
@@ -185,6 +198,17 @@ logs() {
 
 # ----------------------------------------------------------
 
+uli() {
+    # $DOCKER exec -i $CONTAINER_NAME drush uli
+    input=$($DOCKER exec -i $CONTAINER_NAME drush uli)
+    output=$(echo "$input" | sed 's|http://default|http://wb-pantheon.local|')
+
+    copy_to_clipboard "$output"
+    echo "$output"
+}
+
+# ----------------------------------------------------------
+
 cr() {
     $DOCKER exec -i $CONTAINER_NAME drush cr
 }
@@ -204,7 +228,10 @@ dashboard-link() {
 
     SITE_NAME=$ACTION_PARAM
     SITE_ID=$(terminus site:info $SITE_NAME | sed -n 's/^  ID[[:space:]]*\(.*\)/\1/p')
-    echo "https://dashboard.pantheon.io/sites/${SITE_ID}"
+    output="https://dashboard.pantheon.io/sites/${SITE_ID}"
+    output=$(echo "$output" | xargs)
+    copy_to_clipboard "$output"
+    echo "$output"
 }
 
 # ----------------------------------------------------------
@@ -396,6 +423,12 @@ main () {
             shift
             shift
             ;;
+        uli)
+            ACTION=uli
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         cr)
             ACTION=cr
             ACTION_PARAM="$2"
@@ -515,6 +548,11 @@ main () {
         # logs action
         if [ "$ACTION" == "logs" ]; then
             logs;
+        fi
+
+        # uli action
+        if [ "$ACTION" == "uli" ]; then
+            uli;
         fi
 
         # cr action
