@@ -23,7 +23,8 @@ help() {
     echo "     down                  Stop site locally in docker"
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
-    echo "     uli                   Print Drupal admin login link"
+    echo "     uli                   Print Drupal admin login link (current local site)"
+    echo "     ruli                  Print Drupal admin login link (remote site)"
     echo "     cr                    Drupal cache rebuild"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
@@ -206,6 +207,27 @@ uli() {
     copy_to_clipboard "$output"
     echo "$output"
 }
+
+# ----------------------------------------------------------
+
+ruli() {
+
+    if [ "$ACTION_PARAM" == "" ]; then
+        PS2="Select site to generate admin link: "
+        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
+        do
+            ACTION_PARAM=$SNM
+            break;
+        done
+    fi
+
+    input=$(terminus drush $ACTION_PARAM.dev -- uli)
+    output=$(echo "$input" | sed 's|http://default|http://wb-pantheon.local|')
+
+    copy_to_clipboard "$output"
+    echo "$output"
+}
+
 
 # ----------------------------------------------------------
 
@@ -429,6 +451,12 @@ main () {
             shift
             shift
             ;;
+        ruli)
+            ACTION=ruli
+            ACTION_PARAM="$2"
+            shift
+            shift
+            ;;
         cr)
             ACTION=cr
             ACTION_PARAM="$2"
@@ -553,6 +581,11 @@ main () {
         # uli action
         if [ "$ACTION" == "uli" ]; then
             uli;
+        fi
+
+        # ruli action
+        if [ "$ACTION" == "ruli" ]; then
+            ruli;
         fi
 
         # cr action
