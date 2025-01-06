@@ -24,7 +24,7 @@ help() {
     echo "     shell                 Enter in shell drupal container (wb-www-drupal)"
     echo "     logs                  Show last 150 log entries (wb-www-drupal)"
     echo "     uli                   Print Drupal admin login link (current local site)"
-    echo "     ruli                  Print Drupal admin login link (remote site)"
+    echo "     ruli <env>            Print Drupal admin login link (remote site)"
     echo "     cr                    Drupal cache rebuild"
     echo "     composer              Run PHP composer inside wb-www-drupal container (This is useful when you want to install vendor libraries)"
     echo "     restore               Restore database from live site (wb-www-mysql)"
@@ -213,15 +213,19 @@ uli() {
 ruli() {
 
     if [ "$ACTION_PARAM" == "" ]; then
-        PS2="Select site to generate admin link: "
-        select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
-        do
-            ACTION_PARAM=$SNM
-            break;
-        done
+        echo "Select one of the env dev, test or live"
+        exit 1
     fi
 
-    input=$(terminus drush $ACTION_PARAM.dev -- uli)
+    PS2="Select site to generate admin link: "
+    select SNM in $(find sites/ -maxdepth 1 -type d ! -name 'sites' -exec basename {} \;)
+    do
+        SITE_NAME=$SNM
+        break;
+    done
+
+
+    input=$(terminus drush $SITE_NAME.$ACTION_PARAM -- uli)
     output=$(echo "$input" | sed 's|http://default|http://wb-pantheon.local|')
 
     copy_to_clipboard "$output"
