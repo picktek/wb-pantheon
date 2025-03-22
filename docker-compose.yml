@@ -31,8 +31,6 @@ services:
       - wbnet
     volumes:
       - "./config/php.ini:/usr/local/etc/php/php.ini"
-      # - "./sites/${SITE_NAME}/composer.json:/opt/drupal/composer.json"
-      # - "./sites/${SITE_NAME}/composer.lock:/opt/drupal/composer.lock"
       - "./sites/${SITE_NAME}:/opt/drupal"
       - "./sites/${SITE_NAME}/web:/var/www/html"
 
@@ -44,10 +42,11 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT}:80"
-      # - 443:443
+      - 443:443
     volumes:
       - "./sites/${SITE_NAME}/web:/var/www/html"
       - ./config/nginx.conf:/etc/nginx/conf.d/nginx.conf
+      - ./nginx-certs:/etc/nginx/certs:ro
     networks:
       - internal
       - wbnet

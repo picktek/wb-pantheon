@@ -108,6 +108,8 @@ composer() {
     $DOCKER exec -i $CONTAINER_NAME apk add git
     $DOCKER exec -i $CONTAINER_NAME apk add unzip
     $DOCKER exec -i $CONTAINER_NAME apk add patch
+    $DOCKER exec -i $CONTAINER_NAME apk add mysql-client
+    $DOCKER exec -i $CONTAINER_NAME composer global require drush/drush:8.*
     $DOCKER exec -i $CONTAINER_NAME composer install --ignore-platform-req=ext-bcmath
 }
 
@@ -133,19 +135,30 @@ clone() {
     DIR="sites/$SITE_NAME"
     DIR_SITES="sites"
     
+    SITE_FRAMEWORK=$($TERMINUS site:info "$SITE_NAME" | sed -n 's/^  Framework[[:space:]]*\(.*\)/\1/p' | xargs)
     SITE_ID=$($TERMINUS site:lookup $SITE_NAME)
     if [ $? -ne 0 ]; then
         exit $?
     fi
 
     if [ ! -d $DIR ]; then
+        
+        if [[ "$SITE_FRAMEWORK" == "Drupal 8 or later" ]]; then
+            SITE_DIR=$DIR
+        elif [[ "$SITE_FRAMEWORK" == "Drupal 6 or 7" ]]; then
+             SITE_DIR="$DIR/web"
+        else
+            echo "Detected: Other framework - [$SITE_FRAMEWORK]"
+            exit 1
+        fi
 
         # create sites directory if doesn't exists
-        mkdir -p $DIR
-        
-        echo "git clone" "ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR"
-        $GIT clone ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $DIR
+        mkdir -p $SITE_DIR
+        echo "git clone" "ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $SITE_DIR"
+        $GIT clone ssh://codeserver.dev.$SITE_ID@codeserver.dev.$SITE_ID.drush.in:2222/~/repository.git -b master $SITE_DIR
         EXIT_CODE=$?
+
+
 
         # Check if the command was successful
         if [ $EXIT_CODE -ne 0 ]; then
